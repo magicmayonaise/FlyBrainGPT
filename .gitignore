@@ -1,3 +1,9 @@
+# FlyBrainGPT local corpus — never commit XML or parquet
+data/
+*.xml
+!tests/fixtures/*.xml
+!tests/fixtures/**/*.xml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

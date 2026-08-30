@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flybraingpt"
+version = "0.1.0"
+description = "Thirst-circuit RAG corpus builder over PMC Open Access JATS XML"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Dan Landayan" }]
+dependencies = [
+  "lxml>=5.0",
+  "pandas>=2.0",
+  "pyarrow>=15.0",
+  "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.urls]
+Repository = "https://github.com/magicmayonaise/FlyBrainGPT"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flybraingpt*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
