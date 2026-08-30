@@ -8,11 +8,22 @@ This is **not** a trained GPT. There are **no model weights** in this repository
 
 *Drosophila melanogaster* papers on thirst, NPF/NPFR, Allatostatin A, PAM/mushroom-body memory, pC1, and oviDN/oviIN — mined from **native PMC XML** so we skip PDF-to-text conversion.
 
-Corpus **v0** is the **246** articles **pubget** reported as PMC Open Access (2026-08-29). **245** have a JATS `<body>`; **PMC13342866** is OA but body-less and is listed in the CSV, not in `corpus_v0.pmcids.txt`. XML lives only on disk under `data/` (gitignored). Git tracks the **manifest**, not the articles.
+These counts are **different sets**. Do not collapse them.
+
+| Set | n (as of 2026-08-29, re-count on disk) | Where |
+|---|---|---|
+| Mixed EFetch dump (unique PMCIDs) | **307** | local Temp only — **not in git** |
+| Mixed EFetch files with `<body>` | **283 / 308** files (the extra file is a Landayan duplicate) | same dump |
+| Mixed EFetch body-less / &lt; 20 KB | **25** | `manifests/dropped_nobody_efetch.csv` |
+| pubget **Open Access** subset | **246 / 307** | `manifests/corpus_v0.csv` |
+| OA with `<body>` | **245** | `manifests/corpus_v0.pmcids.txt` (build list) |
+| OA without `<body>` | **1** — `PMC13342866` | listed in the OA CSV, **not** in the build list |
+
+XML lives only on disk under `data/` (gitignored). Git tracks the **manifest**, not the articles.
 
 ## Reproduce
 
-You need Python **3.11+**, `uv` or `pip`, and network access to NCBI E-utilities (no campus VPN required for OA XML).
+You need Python **3.11+**, `uv` or `pip`, and network access to NCBI E-utilities (no campus VPN required for OA XML). Use a **project-local** `.venv`. Do not install these packages into a Hermes environment.
 
 ```bash
 cd FlyBrainGPT
@@ -35,11 +46,17 @@ Landayan et al. 2021 (*eLife*) is the CI fixture: DOI `10.7554/eLife.66286`, **P
 ## What is excluded
 
 - **Paywalled** publisher PDFs (including many *Nature* papers), even if a university VPN can open them in a browser.
-- **Non-OA PMC** author manuscripts. EFetch can still return JATS for some of those; **corpus_v0 does not include them**. pubget kept **246 / 307** PMCIDs as Open Access.
+- **Non-OA PMC** author manuscripts. EFetch can still return JATS for some of those; **corpus_v0 does not include them**. pubget kept **246 / 307** PMCIDs as Open Access (~61 author manuscripts stayed out).
 - Papers **without a PMCID** (no NCBI full-text XML).
-- XML files **without a `<body>`** element (front-matter / incomplete records).
+- The **25** mixed-EFetch files without a `<body>` / under 20 KB (`manifests/dropped_nobody_efetch.csv`). That **25** is not the OA-subset **1**.
+- **Four grey-list misclassifications** (not *D. melanogaster* primary research) in `manifests/dropped_grey.csv`:
+  - mosquito AstA receptors `10.1016/j.peptides.2017.10.016`
+  - mammalian heterochromatin `10.1016/s1097-2765(01)00218-0`
+  - mouse landscape diffusion `10.1038/s41586-023-06715-z` (Richman et al., *Nature*)
+  - hypothalamic autophagy/NPY `10.1101/2025.06.20.660653`
 - **PDF-derived** text from paper-search-mcp.
 - Sci-Hub or any non-OA bulk download.
+- pubget `articleset_*.xml` and any Temp JATS dump — never commit those.
 
 ## Data vs code licenses
 
@@ -49,7 +66,7 @@ Landayan et al. 2021 (*eLife*) is the CI fixture: DOI `10.7554/eLife.66286`, **P
 ## Layout
 
 ```
-manifests/          # committed: PMCID list, SHA256, DOI, OA, has_body
+manifests/          # committed: PMCID list, SHA256, DOI, OA, has_body, drop lists
 scripts/            # committed: build_corpus.py
 tests/fixtures/     # committed: one OA JATS fixture (Landayan 2021)
 data/               # gitignored: local XML + parquet
@@ -59,11 +76,12 @@ data/               # gitignored: local XML + parquet
 
 | Piece | State |
 |---|---|
-| Repo skeleton | this commit |
-| corpus_v0 manifest | 246 OA PMCIDs |
+| Repo skeleton | `main`, MIT on **code** |
+| corpus_v0 manifest | 246 OA PMCIDs; 245 in the build list |
+| Grey-list + body-less drops | committed CSVs; builder skips them |
 | Retrieval eval (Janu-AstA, L1-l, oviIN, NPF sign) | not started |
 | Model weights | none |
 
 ## Topics
 
-`drosophila` · `neuroscience` · `rag` · `pubmed-central`
+`drosophila` · `neuroscience` · `rag` · `pubmed-central` · `flybrain` · `open-access`

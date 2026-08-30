@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from flybraingpt.drops import filter_pmcids, load_doi_set, load_pmcid_set  # noqa: E402
 from flybraingpt.jats import looks_like_jats, parse_jats  # noqa: E402
 
 EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -70,11 +71,15 @@ def build(
     fetch: bool,
     drop_no_body: bool,
     sleep_s: float,
+    dropped_pmcids: set[str] | None = None,
+    dropped_dois: set[str] | None = None,
 ) -> pd.DataFrame:
     session = requests.Session()
     session.headers.update({"User-Agent": f"{TOOL}/0.1 (mailto:{EMAIL})"})
     rows = []
-    ids = load_pmcids(pmcids_path)
+    ids = filter_pmcids(load_pmcids(pmcids_path), dropped_pmcids or set())
+    ids = [i[3:] if i.startswith("PMC") else i for i in ids]
+    dropped_dois = {d.lower() for d in (dropped_dois or set())}
     xml_dir.mkdir(parents=True, exist_ok=True)
     for i, num in enumerate(ids, 1):
         dest = xml_dir / f"PMC{num}.xml"
@@ -97,6 +102,10 @@ def build(
             print(f"[{i}/{len(ids)}] MISSING PMC{num}", flush=True)
             continue
         rec = parse_jats(dest)
+        doi = (rec.get("doi") or "").lower()
+        if doi and doi in dropped_dois:
+            print(f"[{i}/{len(ids)}] GREY-DOI skip {rec['pmcid']} {doi}", flush=True)
+            continue
         rec["sha256"] = sha256_file(dest)
         rec["missing_xml"] = False
         rec.pop("source_path", None)
@@ -122,7 +131,21 @@ def main() -> None:
     p.add_argument("--fetch", action="store_true", help="EFetch missing XML files")
     p.add_argument("--keep-empty-body", action="store_true")
     p.add_argument("--sleep", type=float, default=0.35)
+    p.add_argument(
+        "--drop-pmcids",
+        type=Path,
+        default=ROOT / "manifests" / "dropped_nobody_efetch.csv",
+        help="CSV/txt of PMCIDs to hard-drop (default: 25 body-less EFetch files)",
+    )
+    p.add_argument(
+        "--drop-dois",
+        type=Path,
+        default=ROOT / "manifests" / "dropped_grey.csv",
+        help="CSV of grey-list DOIs to hard-drop (mosquito/mammal/mouse/hypothalamic)",
+    )
     args = p.parse_args()
+    dropped_pmcids = load_pmcid_set(args.drop_pmcids) if args.drop_pmcids.exists() else set()
+    dropped_dois = load_doi_set(args.drop_dois) if args.drop_dois.exists() else set()
     df = build(
         args.pmcids,
         args.xml_dir,
@@ -130,6 +153,8 @@ def main() -> None:
         fetch=args.fetch,
         drop_no_body=not args.keep_empty_body,
         sleep_s=args.sleep,
+        dropped_pmcids=dropped_pmcids,
+        dropped_dois=dropped_dois,
     )
     print(f"wrote {args.out} rows={len(df)} has_body={int(df['has_body'].sum()) if len(df) else 0}")
 
