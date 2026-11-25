@@ -1,0 +1,41 @@
+# Pre-commit hooks: Python port of mattpocock/skills "setup-pre-commit".
+#   Husky        -> pre-commit (git hook manager)
+#   lint-staged  -> pre-commit runs hooks on staged files only
+#   Prettier     -> ruff format (+ ruff check --fix)
+#   npm test     -> uv run pytest
+#
+# Install once per clone:   uv run pre-commit install
+# Run on everything:        uv run pre-commit run --all-files
+# Bump hook versions:       uv run pre-commit autoupdate
+
+# Committed corpus data and JATS fixtures must stay byte-for-byte unchanged.
+exclude: ^(tests/fixtures/|manifests/)
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.6
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true
