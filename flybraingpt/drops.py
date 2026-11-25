@@ -37,7 +37,9 @@ def load_doi_set(path: Path) -> set[str]:
             if doi:
                 out.add(doi)
         return out
-    return {_norm_doi(line) for line in text.splitlines() if line.strip() and not line.startswith("#")}
+    return {
+        _norm_doi(line) for line in text.splitlines() if line.strip() and not line.startswith("#")
+    }
 
 
 def load_pmcid_set(path: Path) -> set[str]:
@@ -51,9 +53,7 @@ def load_pmcid_set(path: Path) -> set[str]:
                 out.add(pmcid)
         return out
     return {
-        _norm_pmcid(line)
-        for line in text.splitlines()
-        if line.strip() and not line.startswith("#")
+        _norm_pmcid(line) for line in text.splitlines() if line.strip() and not line.startswith("#")
     }
 
 

@@ -39,6 +39,17 @@ uv run python scripts/build_corpus.py \
 uv run pytest
 ```
 
+### Pre-commit hooks
+
+Every commit runs **ruff** (lint + format), basic file hygiene checks, a private-key scan, and **pytest**. Config lives in `.pre-commit-config.yaml`; ruff settings live in `pyproject.toml`. Committed data (`manifests/`, `tests/fixtures/`) is excluded so it is never rewritten.
+
+```bash
+uv run pre-commit install          # once per clone
+uv run pre-commit run --all-files  # check everything by hand
+```
+
+CI runs the same ruff checks, so skipping hooks locally with `--no-verify` still fails the PR.
+
 NCBI asks for ≤ 3 EFetch requests/second without an API key. Set `NCBI_API_KEY` if you have one.
 
 Landayan et al. 2021 (*eLife*) is the CI fixture: DOI `10.7554/eLife.66286`, **PMC8139827**, PMID **34018925**.
