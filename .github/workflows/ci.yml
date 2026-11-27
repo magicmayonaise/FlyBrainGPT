@@ -9,11 +9,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+        with:
+          fetch-depth: 0 # full history so gitleaks can scan every commit
+
+      - uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: "3.11"
-      - run: uv venv
-      - run: uv pip install -e ".[dev]"
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+          enable-cache: true
+
+      # Installs the project + the `dev` dependency group exactly as pinned in
+      # uv.lock. Fails if uv.lock is out of date with pyproject.toml.
+      - run: uv sync --locked
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      # Same hooks as a local commit: hygiene, secrets, ruff, mypy.
+      - run: uv run pre-commit run --all-files --show-diff-on-failure
+
+      # Scan the whole git history for secrets, not just staged changes.
+      - run: uv run pre-commit run gitleaks-history --hook-stage manual
+
       - run: uv run pytest
