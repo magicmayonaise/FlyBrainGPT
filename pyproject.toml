@@ -17,8 +17,18 @@ dependencies = [
   "requests>=2.31",
 ]
 
-[project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.8", "pre-commit>=4.0"]
+# PEP 735 dependency group: `uv sync` / `uv run` install it by default.
+# Keep the ruff pin equal to the ruff-pre-commit `rev` in .pre-commit-config.yaml.
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "ruff==0.17.6",
+  "pre-commit>=4.0",
+  "mypy>=1.15",
+  "pandas-stubs",
+  "types-requests",
+  "lxml-stubs",
+]
 
 [project.urls]
 Repository = "https://github.com/magicmayonaise/FlyBrainGPT"
@@ -37,3 +47,9 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["flybraingpt", "scripts", "tests"]
+warn_unused_ignores = true
+warn_redundant_casts = true

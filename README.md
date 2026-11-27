@@ -23,12 +23,11 @@ XML lives only on disk under `data/` (gitignored). Git tracks the **manifest**, 
 
 ## Reproduce
 
-You need Python **3.11+**, `uv` or `pip`, and network access to NCBI E-utilities (no campus VPN required for OA XML). Use a **project-local** `.venv`. Do not install these packages into a Hermes environment.
+You need Python **3.11+**, [`uv`](https://github.com/astral-sh/uv), and network access to NCBI E-utilities (no campus VPN required for OA XML). `uv` builds a **project-local** `.venv`. Do not install these packages into a Hermes environment.
 
 ```bash
 cd FlyBrainGPT
-uv venv --python 3.11
-uv pip install -e ".[dev]"
+uv sync --python 3.11   # project + dev tools, exact versions from uv.lock
 
 # Optional: rebuild XML from the OA PMCID list (writes data/corpus_v0/, gitignored)
 uv run python scripts/build_corpus.py \
@@ -41,14 +40,22 @@ uv run pytest
 
 ### Pre-commit hooks
 
-Every commit runs **ruff** (lint + format), basic file hygiene checks, a private-key scan, and **pytest**. Config lives in `.pre-commit-config.yaml`; ruff settings live in `pyproject.toml`. Committed data (`manifests/`, `tests/fixtures/`) is excluded so it is never rewritten.
+| When | Hook | What it does |
+|---|---|---|
+| `git commit` | pre-commit-hooks | Trims whitespace, fixes file endings, validates YAML/TOML, blocks merge markers and files > 1 MB, blocks private keys |
+| `git commit` | **gitleaks** | Blocks API keys and tokens in staged changes |
+| `git commit` | **ruff** | Lints (`--fix`) and formats Python |
+| `git commit` | **mypy** | Type-checks `flybraingpt/`, `scripts/`, `tests/` |
+| `git push` | **pytest** | Runs the test suite before code leaves your machine |
+
+Committed data (`manifests/`, `tests/fixtures/`) is never rewritten, but it is still checked for large files and secrets. Config lives in `.pre-commit-config.yaml`; ruff and mypy settings live in `pyproject.toml`.
 
 ```bash
-uv run pre-commit install          # once per clone
+uv run pre-commit install          # once per clone: installs commit + push hooks
 uv run pre-commit run --all-files  # check everything by hand
 ```
 
-CI runs the same ruff checks, so skipping hooks locally with `--no-verify` still fails the PR.
+CI runs `uv sync --locked`, the same hooks, a full-history gitleaks scan, and pytest, so skipping hooks locally with `--no-verify` still fails the PR. After `uv run pre-commit autoupdate`, set the matching `ruff==` pin in `pyproject.toml` and run `uv lock`.
 
 NCBI asks for ≤ 3 EFetch requests/second without an API key. Set `NCBI_API_KEY` if you have one.
 
